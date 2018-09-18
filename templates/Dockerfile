@@ -35,15 +35,6 @@ RUN dpkg --add-architecture i386 && \
     sdkmanager --no_https emulator tools platform-tools "platforms;{{ platform }}" "system-images;{{ platform }};google_apis;x86" --verbose && \
     echo no | avdmanager create avd -n "x86" --package "system-images;{{ platform }};google_apis;x86" --tag google_apis && \
 
-    # Unfilter devices (now local because CI downloads from github are unstable)
-    # curl -o /root/.android/adb_usb.ini https://raw.githubusercontent.com/apkudo/adbusbini/master/adb_usb.ini && \
-
-    # Optimize size of the image
-    rm /root/.android/avd/x86.avd/userdata.img && \
-    tar -czvf /opt/android-sdk-linux/system-images/{{ platform }}/google_apis/x86/userdata.img.tar.gz /opt/android-sdk-linux/system-images/{{ platform }}/google_apis/x86/userdata.img && \
-    rm /opt/android-sdk-linux/system-images/{{ platform }}/google_apis/x86/userdata.img && \
-    tar -czvf /opt/android-sdk-linux/system-images/{{ platform }}/google_apis/x86/system.img.tar.gz /opt/android-sdk-linux/system-images/{{ platform }}/google_apis/x86/system.img && \
-    rm /opt/android-sdk-linux/system-images/{{ platform }}/google_apis/x86/system.img && \
     DEBIAN_FRONTEND=noninteractive apt-get purge -yq unzip openjdk-8-jdk && \
 
     apt-get -yq autoremove && \
@@ -57,6 +48,14 @@ ADD config.ini /root/.android/avd/x86.avd/config.ini
 EXPOSE 5037 5554 5555
 
 # Add script
-ADD start.sh /start.sh
-RUN chmod +x /start.sh
-CMD /start.sh
+ADD setup_adb_redirection.sh \
+    setup_android_config_from_environment.sh \
+    start_emulator.sh \
+    entrypoint.sh /
+
+RUN chmod +x setup_adb_redirection.sh \
+    setup_android_config_from_environment.sh \
+    start_emulator.sh \
+    entrypoint.sh
+
+CMD /entrypoint.sh
